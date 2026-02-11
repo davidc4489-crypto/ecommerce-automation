@@ -4,41 +4,47 @@ import { logger } from '../helpers/logger.js';
 import type { ShippingDetails, PaymentDetails } from '@ecommerce-automation/shared';
 
 const SELECTORS = {
-  // Sign-in step (step 1 - handled by login flow)
-  // Address step (step 2)
-  address: '[data-test="address"]',
+  // Step 2: Sign-in (auto-completed for logged-in users)
+  proceed2: '[data-test="proceed-2"]',
+  // Step 3: Billing Address
+  street: '[data-test="street"]',
   city: '[data-test="city"]',
   state: '[data-test="state"]',
   country: '[data-test="country"]',
-  postcode: '[data-test="postcode"]',
-  proceed2: '[data-test="proceed-2"]',
-  // Payment step (step 3)
-  paymentMethod: '[data-test="payment-method"]',
+  postalCode: '[data-test="postal_code"]',
   proceed3: '[data-test="proceed-3"]',
+  // Step 4: Payment
+  paymentMethod: '[data-test="payment-method"]',
   // Bank Transfer fields
   bankName: '[data-test="bank_name"]',
   accountName: '[data-test="account_name"]',
   accountNumber: '[data-test="account_number"]',
-  // Confirmation step
+  // Confirmation
   finish: '[data-test="finish"]',
-  successMessage: '#order-confirmation',
 } as const;
 
 export class CheckoutPage {
   constructor(private page: Page) {}
 
-  async fillShippingDetails(shipping: ShippingDetails): Promise<void> {
-    logger.info('Filling shipping details');
-    await waitForSelector(this.page, SELECTORS.address);
+  async skipSignIn(): Promise<void> {
+    logger.info('Skipping sign-in step (already logged in)');
+    await waitForSelector(this.page, SELECTORS.proceed2);
+    await this.page.click(SELECTORS.proceed2);
+    logger.info('Sign-in step skipped');
+  }
 
-    await this.page.fill(SELECTORS.address, shipping.address);
+  async fillShippingDetails(shipping: ShippingDetails): Promise<void> {
+    logger.info('Filling billing address');
+    await waitForSelector(this.page, SELECTORS.street);
+
+    await this.page.fill(SELECTORS.street, shipping.address);
     await this.page.fill(SELECTORS.city, shipping.city);
     await this.page.fill(SELECTORS.state, shipping.state);
     await this.page.fill(SELECTORS.country, shipping.country);
-    await this.page.fill(SELECTORS.postcode, shipping.postcode);
+    await this.page.fill(SELECTORS.postalCode, shipping.postcode);
 
-    await this.page.click(SELECTORS.proceed2);
-    logger.info('Shipping details submitted');
+    await this.page.click(SELECTORS.proceed3);
+    logger.info('Billing address submitted');
   }
 
   async selectPaymentMethod(payment: PaymentDetails): Promise<void> {
@@ -55,16 +61,12 @@ export class CheckoutPage {
       await this.page.fill(SELECTORS.accountNumber, payment.accountNumber || '1234567890');
     }
 
-    await this.page.click(SELECTORS.proceed3);
-    logger.info('Payment method selected');
+    await this.page.click(SELECTORS.finish);
+    logger.info('Payment submitted');
   }
 
-  async confirmOrder(): Promise<void> {
-    logger.info('Confirming order');
-    await waitForSelector(this.page, SELECTORS.finish);
-    await this.page.click(SELECTORS.finish);
-
-    // Wait for success
+  async waitForConfirmation(): Promise<void> {
+    logger.info('Waiting for order confirmation');
     await waitForText(this.page, 'Payment was successful');
     logger.info('Order confirmed successfully');
   }

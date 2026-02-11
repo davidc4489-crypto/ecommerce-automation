@@ -30,9 +30,9 @@ export async function cartFlow(page: Page, options: CartFlowOptions): Promise<Pr
 
   await withRetry(
     async () => {
-      // Click on the product from the results
-      const homePage = new HomePage(page);
-      await homePage.clickProductByTitle(selectedProduct.title);
+      // Navigate directly to the product detail page
+      logger.info({ url: selectedProduct.productURL }, 'Navigating to product page');
+      await page.goto(selectedProduct.productURL);
 
       // Add to cart
       const detailPage = new ProductDetailPage(page);

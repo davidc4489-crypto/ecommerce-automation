@@ -4,19 +4,21 @@ import { waitForSelector } from '../helpers/waits.js';
 import { logger } from '../helpers/logger.js';
 
 export async function extractProducts(page: Page): Promise<Product[]> {
-  await waitForSelector(page, '.card');
+  // Wait for actual product content, not skeleton cards
+  await waitForSelector(page, '[data-test="product-name"]');
 
-  const rawData: RawProductData[] = await page.$$eval('.card', (cards) =>
+  const rawData: RawProductData[] = await page.$$eval('a.card', (cards) =>
     cards.map((card) => {
-      const titleEl = card.querySelector('.card-title, h5');
-      const priceEl = card.querySelector('[data-test="product-price"], .card-text');
+      const anchor = card as HTMLAnchorElement;
+      const titleEl = card.querySelector('[data-test="product-name"]');
+      const priceEl = card.querySelector('[data-test="product-price"]');
       const imgEl = card.querySelector('img');
-      const linkEl = card.querySelector('a');
       return {
+        id: anchor.dataset.test?.replace('product-', '') ?? '',
         title: titleEl?.textContent?.trim() ?? '',
         price: priceEl?.textContent?.trim() ?? '',
-        imgSrc: imgEl?.getAttribute('src') ?? '',
-        href: linkEl?.getAttribute('href') ?? '',
+        imgSrc: imgEl?.src ?? '',
+        href: anchor.href ?? '',
       };
     }),
   );

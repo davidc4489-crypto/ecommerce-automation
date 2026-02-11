@@ -33,7 +33,6 @@ export default function SearchPage() {
       const res = await startSearch({ query, maxPrice });
       setRunId(res.runId);
 
-      // Poll for results
       const poll = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/results/${res.runId}`);
@@ -52,13 +51,12 @@ export default function SearchPage() {
         }
       }, 2000);
 
-      // Timeout after 90s
       setTimeout(() => {
         clearInterval(poll);
-        if (loading) {
-          setLoading(false);
-          setError('Search timed out');
-        }
+        setLoading((prev) => {
+          if (prev) setError('Search timed out');
+          return false;
+        });
       }, 90000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -68,34 +66,16 @@ export default function SearchPage() {
 
   const handleBuy = async (productId: string) => {
     if (!runId) return;
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
     setLoading(true);
     setError(null);
 
     try {
       await addToCart({ runId, productId, selectionPolicy: 'first' });
-
-      // Poll for add-to-cart completion then navigate
-      const poll = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`/api/results/${runId}`);
-          const data = await statusRes.json();
-          const cartStep = data.steps?.find((s: { name: string }) => s.name === 'add-to-cart');
-          if (cartStep?.status === 'completed') {
-            clearInterval(poll);
-            setLoading(false);
-            const product = products.find((p) => p.id === productId);
-            navigate('/checkout', { state: { runId, product } });
-          } else if (cartStep?.status === 'failed') {
-            clearInterval(poll);
-            setLoading(false);
-            setError(cartStep.error || 'Add to cart failed');
-          }
-        } catch {
-          // Continue polling
-        }
-      }, 2000);
-
-      setTimeout(() => clearInterval(poll), 60000);
+      // Navigate to cart immediately — cart page will track progress
+      navigate('/cart', { state: { runId, product } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add to cart');
       setLoading(false);

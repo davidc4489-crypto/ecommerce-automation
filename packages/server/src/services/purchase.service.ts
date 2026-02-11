@@ -1,7 +1,9 @@
-import type { ShippingDetails, PaymentDetails, SelectionPolicy, SearchResult } from '@ecommerce-automation/shared';
+import type { ShippingDetails, PaymentDetails, SelectionPolicy, SearchResult, Product } from '@ecommerce-automation/shared';
+import { selectProduct } from '@ecommerce-automation/shared';
 import { cartFlow, proceedToCheckout, checkoutFlow } from '@ecommerce-automation/automation';
 import { getBrowserForRun, closeBrowserForRun } from './automation.service.js';
 import { runStore } from '../stores/run-store.js';
+import { cartStore } from '../stores/cart-store.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'purchase-service' });
@@ -23,14 +25,17 @@ export async function addToCart(
     const page = manager.getPage();
     runStore.addStep(runId, { name: 'add-to-cart', status: 'running', startedAt: new Date().toISOString() });
 
-    await cartFlow(page, {
+    const selected = await cartFlow(page, {
       products: searchResult.products,
       productId,
       selectionPolicy,
     });
 
+    // Persist to cart store
+    cartStore.addItem({ ...selected, runId });
+
     runStore.addStep(runId, { name: 'add-to-cart', status: 'completed', completedAt: new Date().toISOString() });
-    logger.info({ runId }, 'Product added to cart');
+    logger.info({ runId, product: selected.title }, 'Product added to cart');
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error({ runId, error: message }, 'Add to cart failed');
