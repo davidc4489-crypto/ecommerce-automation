@@ -137,3 +137,10 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Screenshots (generated at runtime)
+screenshots/*.png
+
+# Playwright
+test-results/
+playwright-report/
