@@ -35,6 +35,14 @@ class RunStore extends EventEmitter {
 
     const existing = run.steps.findIndex((s) => s.name === step.name);
     if (existing >= 0) {
+      const prev = run.steps[existing];
+      // Preserve startedAt from the running step and compute duration
+      if (!step.startedAt && prev.startedAt) {
+        step.startedAt = prev.startedAt;
+      }
+      if (step.completedAt && step.startedAt && step.durationMs === undefined) {
+        step.durationMs = new Date(step.completedAt).getTime() - new Date(step.startedAt).getTime();
+      }
       run.steps[existing] = step;
     } else {
       run.steps.push(step);
