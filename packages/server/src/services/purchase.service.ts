@@ -1,6 +1,6 @@
 import type { ShippingDetails, PaymentDetails, SelectionPolicy, SearchResult, Product } from '@ecommerce-automation/shared';
 import { selectProduct } from '@ecommerce-automation/shared';
-import { cartFlow, proceedToCheckout, checkoutFlow } from '@ecommerce-automation/automation';
+import { cartFlow, proceedToCheckout, checkoutFlow, loginFlow } from '@ecommerce-automation/automation';
 import { getBrowserForRun, closeBrowserForRun } from './automation.service.js';
 import { runStore } from '../stores/run-store.js';
 import { cartStore } from '../stores/cart-store.js';
@@ -53,6 +53,11 @@ export async function checkout(
 
   try {
     const page = manager.getPage();
+
+    // Re-login to ensure session is fresh (may have expired since add-to-cart)
+    runStore.addStep(runId, { name: 're-login', status: 'running', startedAt: new Date().toISOString() });
+    await loginFlow(page);
+    runStore.addStep(runId, { name: 're-login', status: 'completed', completedAt: new Date().toISOString() });
 
     // Proceed from cart to checkout
     runStore.addStep(runId, { name: 'proceed-to-checkout', status: 'running', startedAt: new Date().toISOString() });

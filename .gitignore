@@ -140,6 +140,7 @@ vite.config.ts.timestamp-*
 
 # Screenshots (generated at runtime)
 screenshots/*.png
+packages/server/screenshots/
 
 # Playwright
 test-results/

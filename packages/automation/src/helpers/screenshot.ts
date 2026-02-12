@@ -1,8 +1,12 @@
 import type { Page } from 'playwright';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 
-const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || './screenshots';
+// Resolve screenshots dir relative to the monorepo root (5 levels up from this file)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || path.join(PROJECT_ROOT, 'screenshots');
 
 export async function captureScreenshot(page: Page, name: string): Promise<string> {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
